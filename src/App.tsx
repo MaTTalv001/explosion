@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Flame, RefreshCw, HelpCircle } from 'lucide-react';
 import { chantPatterns, type ChantSegment, type ChantPattern } from './data/chants';
 
+// グローバル関数の型定義
 declare global {
   interface Window {
     YT: any;
     onYouTubeIframeAPIReady: () => void;
+    triggerExplosion: () => void;
+    showMagicCircle: () => void;
+    triggerSuccessFlash: () => void;
   }
 }
 
@@ -16,6 +20,7 @@ function App() {
   const [gameState, setGameState] = useState<'playing' | 'success' | 'failure'>('playing');
   const [hintsRemaining, setHintsRemaining] = useState<number>(3);
   const [highlightedSegment, setHighlightedSegment] = useState<number | null>(null);
+  const [showMysticEffects, setShowMysticEffects] = useState<boolean>(false);
 
   // YouTube Player 関連
   const playerRef = useRef<any>(null);
@@ -26,7 +31,7 @@ function App() {
   // タイマー管理用 Ref (useEffect でセットし、クリーンアップで解除する)
   const loopCheckTimerRef = useRef<number | null>(null);
 
-  // シャッフル関数（省略可）
+  // シャッフル関数
   const shuffleArray = <T,>(array: T[]): T[] => {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -96,6 +101,7 @@ function App() {
     setIsPlayerVisible(false);
     setHintsRemaining(3);
     setHighlightedSegment(null);
+    setShowMysticEffects(false);
 
     // プレイヤーを停止
     if (isPlayerReady && playerRef.current) {
@@ -132,6 +138,10 @@ function App() {
     const segmentIndex = shuffledSegments.findIndex(s => s.番号 === segment.番号);
     if (segmentIndex === -1) return;
 
+    // 選択エフェクト - 小さな魔法効果を表示
+    setShowMysticEffects(true);
+    setTimeout(() => setShowMysticEffects(false), 500);
+
     setSelectedSegments([...selectedSegments, segment]);
     setShuffledSegments(shuffledSegments.filter((_, index) => index !== segmentIndex));
     
@@ -153,7 +163,18 @@ function App() {
     const segmentIndex = shuffledSegments.findIndex(s => s.番号 === nextSegmentNumber);
     
     if (segmentIndex !== -1) {
-      setHighlightedSegment(nextSegmentNumber);
+      setHighlightedSegment(
+        nextSegmentNumber);
+      
+      // 魔法陣エフェクト（小さめ）
+      if (window.showMagicCircle) {
+        const magicCircle = document.getElementById('magic-circle');
+        if (magicCircle) {
+          magicCircle.style.width = '150px';
+          magicCircle.style.height = '150px';
+          window.showMagicCircle();
+        }
+      }
     }
   };
 
@@ -161,10 +182,30 @@ function App() {
   const playSuccessVideo = () => {
     if (!currentPattern) return;
     
+    // 魔法陣を表示
+    if (window.showMagicCircle) {
+      const magicCircle = document.getElementById('magic-circle');
+      if (magicCircle) {
+        magicCircle.style.width = '300px';
+        magicCircle.style.height = '300px';
+        window.showMagicCircle();
+      }
+    }
+    
+    // 爆発エフェクト
+    if (window.triggerExplosion) {
+      window.triggerExplosion();
+    }
+    
+    // 成功フラッシュ
+    if (window.triggerSuccessFlash) {
+      window.triggerSuccessFlash();
+    }
+    
     // 動画を表示する
     setIsPlayerVisible(true);
     
-    // 少し待ってから再生を開始（DOM更新を待つ）
+    // 少し待ってから再生を開始（DOM更新とエフェクトのタイミングを合わせる）
     setTimeout(() => {
       if (playerRef.current && isPlayerReady) {
         console.log("Playing success video from:", currentPattern.動画.開始時間);
@@ -185,7 +226,7 @@ function App() {
           }
         }, 1000);
       }
-    }, 500);
+    }, 1500);
   };
 
   // 失敗時の動画再生関数
@@ -271,26 +312,31 @@ function App() {
     };
   }, [gameState, currentPattern]);
 
-  // リセットボタンはページリロードで対応
+  // リセットボタン
   const handleReset = () => {
-    window.location.reload();
+    initializeGame();
   };
 
   return (
-    <div className="min-h-screen bg-black text-red-500 flex flex-col items-center p-4">
-      <h1 className="text-3xl font-bold mb-4 text-red-600">エクスプロージョンEX</h1>
+    <div className="min-h-screen bg-gradient-to-b from-black to-red-950 text-red-400 flex flex-col items-center p-4">
+      <h1 className="text-4xl font-bold mb-6 text-accent-gold cinzel-font text-center bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-yellow-500 to-red-500">
+        絶望の深淵より放たれし爆裂魔導
+      </h1>
+      <h2 className="text-xl mb-8 text-yellow-500 text-center">～紅魔族最強の破壊詠唱～</h2>
 
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left Column - Game Elements (1/2) */}
-        <div className="flex flex-col gap-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Column - Game Elements */}
+        <div className="flex flex-col gap-6">
           {/* Selected Segments */}
-          <div className="bg-gray-900 p-3 rounded-lg border-2 border-red-800 flex-grow min-h-[200px] overflow-y-auto">
-            <h2 className="text-lg mb-2 text-red-400">選択された詠唱:</h2>
-            <div className="space-y-2">
+          <div className={`bg-gradient-to-br from-gray-900 to-red-950 p-4 rounded-lg border-2 ${
+            showMysticEffects ? 'border-yellow-400 shadow-lg shadow-red-900/50' : 'border-red-800'
+          } flex-grow min-h-[200px] overflow-y-auto transition-all duration-300`}>
+            <h2 className="text-lg mb-3 text-accent-gold font-bold">解放された魔導書:</h2>
+            <div className="space-y-3">
               {selectedSegments.map((segment, index) => (
                 <div
                   key={index}
-                  className="p-2 bg-gray-800 rounded text-red-400 border border-red-900 text-sm"
+                  className="p-3 bg-gradient-to-r from-red-950 to-red-900 rounded text-red-300 border border-red-700 text-sm shadow-inner shadow-black/50"
                 >
                   {segment.テキスト}
                 </div>
@@ -300,16 +346,16 @@ function App() {
 
           {/* Available Segments */}
           <div className="flex-grow min-h-[200px]">
-            <h2 className="text-lg mb-2 text-red-400">利用可能な詠唱:</h2>
-            <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-1">
+            <h2 className="text-lg mb-3 text-accent-gold font-bold">封印された魔法文節:</h2>
+            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-1">
               {shuffledSegments.map((segment, index) => (
                 <button
                   key={index}
                   onClick={() => handleSegmentClick(segment)}
-                  className={`p-2 bg-gray-800 text-left rounded transition-colors border text-red-400 text-sm ${
+                  className={`p-3 text-left rounded transition-all duration-300 border text-sm ${
                     highlightedSegment === segment.番号 
-                      ? 'bg-red-900 border-yellow-500 animate-pulse' 
-                      : 'border-red-900 hover:bg-gray-700'
+                      ? 'bg-gradient-to-r from-red-700 to-yellow-900 border-yellow-400 animate-pulse shadow-md shadow-yellow-600/30 text-yellow-200' 
+                      : 'bg-gradient-to-r from-gray-900 to-red-950 border-red-800 hover:bg-red-900 hover:border-red-600 text-red-300'
                   }`}
                   disabled={gameState !== 'playing'}
                 >
@@ -320,27 +366,27 @@ function App() {
           </div>
         </div>
 
-        {/* Right Column - YouTube Player & Controls (1/2) */}
-        <div className="flex flex-col gap-4">
+        {/* Right Column - YouTube Player & Controls */}
+        <div className="flex flex-col gap-6">
           {/* YouTube Player or Explanation Text */}
-          <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden border-2 border-red-900 flex items-center justify-center">
+          <div className="aspect-video bg-gradient-to-br from-gray-900 to-red-950 rounded-lg overflow-hidden border-2 border-red-900 flex items-center justify-center shadow-lg shadow-red-900/30">
             {isPlayerVisible ? (
               <div id="player-container" ref={playerContainerRef} className="w-full h-full" />
             ) : (
-              <div className="text-center p-4 text-red-400">
+              <div className="text-center p-6 text-red-400">
                 <p className="text-sm">
                   汝、紅魔族随一の魔法の使い手にして、
                 </p>
                 <p className="text-sm">
                   爆裂魔法を操りし者。
                 </p>
-                <p className="text-sm mt-2">
+                <p className="text-sm mt-3">
                   混沌の闇より現れし者よ。
                 </p>
-                <p className="text-sm mt-2">
+                <p className="text-yellow-500 text-sm mt-3 font-bold">
                   <strong>正しき詠唱の順序を組み立て</strong>
                 </p>
-                <p className="text-sm mt-2">
+                <p className="text-accent-gold text-lg mt-3 font-bold animate-pulse">
                   エクスプロージョンを放て！
                 </p>
               </div>
@@ -349,25 +395,25 @@ function App() {
           
           {/* Game State Messages */}
           {gameState === 'failure' && (
-            <div className="text-xl text-red-500 font-bold animate-pulse">
-              ハズレ！もう一度挑戦してください。
+            <div className="text-xl text-red-500 font-bold animate-pulse text-center">
+              詠唱失敗！魔力が暴走してしまった！
             </div>
           )}
           
           {/* Hint Status */}
           <div className="flex justify-between items-center text-sm">
-            <span className="text-red-400">
-              導き残り: {hintsRemaining}/3
+            <span className="text-yellow-500">
+              神託の残滴: {hintsRemaining}/3
             </span>
             {highlightedSegment !== null && (
-              <span className="text-yellow-500 animate-pulse">
-                ✨ 導き表示中
+              <span className="text-yellow-400 animate-pulse">
+                ✨ 神の啓示が届いている... 
               </span>
             )}
           </div>
           
           {/* Control Buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={handleExplosion}
               disabled={
@@ -375,27 +421,27 @@ function App() {
                 selectedSegments.length !== currentPattern.文節.length ||
                 gameState !== 'playing'
               }
-              className="flex items-center gap-1 px-3 py-2 bg-red-700 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex-grow"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-800 to-red-600 text-yellow-200 rounded-lg hover:from-red-700 hover:to-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex-grow shadow-md shadow-red-900/50 font-bold"
             >
-              <Flame className="w-4 h-4" />
+              <Flame className="w-5 h-5" />
               エクスプロージョン！
             </button>
             
             <button
               onClick={handleHint}
               disabled={hintsRemaining <= 0 || gameState !== 'playing' || highlightedSegment !== null}
-              className="flex items-center gap-1 px-3 py-2 bg-yellow-700 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-yellow-900 to-yellow-700 text-yellow-200 rounded-lg hover:from-yellow-800 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm shadow-md shadow-yellow-900/50 font-bold"
             >
-              <HelpCircle className="w-4 h-4" />
-              冥府の導き
+              <HelpCircle className="w-5 h-5" />
+              冥府の啓示
             </button>
 
             <button
               onClick={handleReset}
-              className="flex items-center gap-1 px-3 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-900 to-purple-700 text-purple-200 rounded-lg hover:from-purple-800 hover:to-purple-600 transition-all text-sm shadow-md shadow-purple-900/50 font-bold"
             >
-              <RefreshCw className="w-4 h-4" />
-              混沌の再開
+              <RefreshCw className="w-5 h-5" />
+              時空転生
             </button>
           </div>
         </div>

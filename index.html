@@ -1,13 +1,91 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Explosion EX</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>絶望の深淵より放たれし爆裂魔導</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+
+  <style>
+    #magic-circle {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      z-index: 4;
+      opacity: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='none' stroke='%23FFD700' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='35' fill='none' stroke='%23FFD700' stroke-width='0.5'/%3E%3Cpath d='M50 5 L50 95 M5 50 L95 50 M14.6 14.6 L85.4 85.4 M14.6 85.4 L85.4 14.6' stroke='%23FFD700' stroke-width='0.5'/%3E%3Cpolygon points='50,10 45,25 55,25' fill='%23FFD700'/%3E%3Cpolygon points='90,50 75,45 75,55' fill='%23FFD700'/%3E%3Cpolygon points='50,90 55,75 45,75' fill='%23FFD700'/%3E%3Cpolygon points='10,50 25,55 25,45' fill='%23FFD700'/%3E%3C/svg%3E");
+    }
+  </style>
+</head>
+
+<body>
+  <div id="magic-circle"></div>
+  <div class="flash-overlay"></div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+
+  <!-- 外部ライブラリ - Reactアプリロード後に読み込む -->
+  <script>
+    // アプリケーションが読み込まれた後にライブラリを読み込む
+    window.addEventListener('load', function () {
+      // アニメーションライブラリ
+      const animeScript = document.createElement('script');
+      animeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js';
+      document.body.appendChild(animeScript);
+
+      // グローバル関数を定義
+      window.showMagicCircle = function () {
+        const magicCircle = document.getElementById('magic-circle');
+        if (window.anime) {
+          window.anime({
+            targets: magicCircle,
+            opacity: [0, 0.8],
+            scale: [0.5, 1],
+            rotate: '1turn',
+            duration: 2000,
+            easing: 'easeOutExpo'
+          });
+
+          setTimeout(() => {
+            window.anime({
+              targets: magicCircle,
+              opacity: 0,
+              scale: 1.5,
+              duration: 1000,
+              easing: 'easeInExpo'
+            });
+          }, 3000);
+        }
+      };
+
+      window.triggerSuccessFlash = function () {
+        const flashOverlay = document.querySelector('.flash-overlay');
+        if (window.anime) {
+          window.anime({
+            targets: flashOverlay,
+            opacity: [0.7, 0],
+            duration: 300,
+            easing: 'linear',
+            background: [
+              { value: 'rgba(255, 0, 0, 0.3)' },
+              { value: 'rgba(255, 165, 0, 0.3)' },
+              { value: 'rgba(255, 255, 0, 0.3)' }
+            ],
+            loop: 3
+          });
+        }
+      };
+    });
+  </script>
+</body>
+
 </html>
